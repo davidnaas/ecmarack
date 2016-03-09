@@ -17,5 +17,8 @@
     "gulp-babel": "^6.1.2",
     "nodemon": "^1.9.1",
     "sliced": "^1.0.1"
+  },
+  "dependencies": {
+    "redux": "^3.3.1"
   }
 }

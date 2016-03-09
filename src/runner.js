@@ -1,7 +1,6 @@
-'use strict'
-const app = require('electron').app;
-const BrowserWindow = require('electron').BrowserWindow;
-const ipcMain = require('electron').ipcMain
+import { app } from 'electron';
+import { BrowserWindow } from 'electron';
+import { ipcMain } from 'electron';
 const parent = require('./ipc')(process);
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -10,10 +9,11 @@ let mainWindow;
 
 function createWindow () {
   mainWindow = new BrowserWindow({width: 800, height: 600});
+  // mainWindow = new BrowserWindow({width: 0, height: 0});
   mainWindow.loadURL('file://' + __dirname + '/index.html');
   mainWindow.webContents.openDevTools();
 
-  app.dock.hide();
+  // app.dock.hide();
 }
 
 app.on('ready', createWindow);
@@ -22,3 +22,7 @@ app.on('ready', createWindow);
 parent.on('readline', function (splitInput) {
   mainWindow.webContents.send('readline', splitInput);
 });
+
+ipcMain.on('modular', function(event, msg) {
+  parent.emit('response', msg);
+})

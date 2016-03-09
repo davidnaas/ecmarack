@@ -1,10 +1,8 @@
-'use strict';
-
-const electronPath = require('electron-prebuilt');
-const childProcess = require('child_process');
-const path = require('path');
-const readline = require('readline');
-const ipc = require('./ipc');
+import electronPath from 'electron-prebuilt';
+import childProcess from 'child_process';
+import path from 'path';
+import readline from 'readline';
+import ipc from './ipc';
 
 // Runner contains the main electron thread
 const runner = path.join(__dirname, 'runner.js');
@@ -30,5 +28,10 @@ rl.on('line', function (line) {
 });
 
 function handleInput(line) {
-  child.emit('readline', line.split('|'));
+  child.emit('readline', line);
 }
+
+// Response from the synth
+child.on('response', function(msg) {
+  console.log(msg);
+});
