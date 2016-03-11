@@ -20,7 +20,7 @@ const ctx = new AudioContext();
     }
  */
 
-function patch(state = {}, action = {}) {
+function patch(state = { connections: {}, nodes: {} }, action = {}) {
   switch (action.type) {
   case 'ADD_CONNECTION':
     return Object.assign({}, state, {
@@ -31,8 +31,8 @@ function patch(state = {}, action = {}) {
   case 'SET_AUDIO_PARAM':
     return Object.assign({}, state, {
       nodes: Object.assign({}, state.nodes, {
-        [action.node]: Object.assign({}, state.nodes[action.node], {
-          [action.type]: action.value
+        [action.modification.node]: Object.assign({}, state.nodes[action.modification.node] ? state.nodes[action.modification.node] : {}, {
+          [action.modification.type]: action.modification.value
         })
       })
     });
@@ -62,7 +62,7 @@ ipcRenderer.on('readline', function (event, line) {
     }
   } else {
     command = line.split('>');
-    command = command.slice(0, 2).concat(command.slice(1, array.length)[0].split('.'));
+    command = command.slice(0, 1).concat(command.slice(1, command.length)[0].split('.'));
     action = {
       type: 'SET_AUDIO_PARAM',
       modification: {
