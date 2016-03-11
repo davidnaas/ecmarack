@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron';
 import { createStore } from 'redux';
+import { assemblePatch } from './assemblePatch'
 
 const ctx = new AudioContext();
 
@@ -28,7 +29,7 @@ function patch(state = { connections: {}, nodes: {} }, action = {}) {
         [action.connection.from]: action.connection.to
       })
     });
-  case 'SET_AUDIO_PARAM':
+  case 'SET_AUDIO_PARAM': // TODO split into subreducers
     return Object.assign({}, state, {
       nodes: Object.assign({}, state.nodes, {
         [action.modification.node]: Object.assign({}, state.nodes[action.modification.node] ? state.nodes[action.modification.node] : {}, {
@@ -44,22 +45,26 @@ function patch(state = { connections: {}, nodes: {} }, action = {}) {
 let store = createStore(patch);
 
 store.subscribe(() => {
-  // assemblePatch(store.getState());
   ipcRenderer.send('modular', store.getState());
+  //assemblePatch(store.getState(), ctx);
 });
 
 ipcRenderer.on('readline', function (event, line) {
   let command = line.split('|');
-  let action;
+  let actions = [];
 
   if (command.length > 1) {
-    action = {
-      type: 'ADD_CONNECTION',
-      connection: {
-        from: command[0],
-        to: command[1]
+    command.forEach((part, i) => {  
+      if (i > 0) {
+        actions.push({
+          type: 'ADD_CONNECTION',
+          connection: {
+            from: command[i - 1],
+            to: command[i]
+          }
+        });
       }
-    }
+    });
   } else {
     command = line.split('>');
     command = command.slice(0, 1).concat(command.slice(1, command.length)[0].split('.'));
@@ -72,6 +77,7 @@ ipcRenderer.on('readline', function (event, line) {
       }
     }
   }
-
-  store.dispatch(action);
+  actions.forEach((action) => {
+    store.dispatch(action);
+  });
 });
