@@ -25,17 +25,53 @@ function patch(state = { connections: {}, nodes: {} }, action = {}) {
   switch (action.type) {
   case 'ADD_CONNECTION':
     return Object.assign({}, state, {
-      connections: Object.assign({}, state.connections, {
-        [action.connection.from]: action.connection.to
-      })
+      connections: connections(state.connections, action)
     });
-  case 'SET_AUDIO_PARAM': // TODO split into subreducers
+  case 'SET_AUDIO_PARAM':
     return Object.assign({}, state, {
-      nodes: Object.assign({}, state.nodes, {
-        [action.modification.node]: Object.assign({}, state.nodes[action.modification.node] ? state.nodes[action.modification.node] : {}, {
-          [action.modification.type]: action.modification.value
-        })
-      })
+      nodes: nodes(state.nodes, action)
+    });
+  case 'ADD_NODE':
+    return Object.assign({}, state, {
+      nodes: nodes(state.nodes, action)
+    });
+  default:
+    return state;
+  }
+}
+
+function connections(state = {}, action) {
+  switch (action.type) {
+  case 'ADD_CONNECTION':
+    return Object.assign({}, state, {
+      [action.connection.from]: action.connection.to
+    });
+  default:
+    return state;
+  }
+}
+
+function nodes(state = {}, action) {
+  switch (action.type) {
+  case 'SET_AUDIO_PARAM':
+    const modificationNode = state[action.modification.node] ? state[action.modification.node] : {};
+    return Object.assign({}, state, {
+      [action.modification.node]: modification(modificationNode, action)
+    });
+  case 'ADD_NODE':
+    return Object.assign({}, state, {
+      [action.node]: {}
+    });
+  default:
+    return state;
+  }
+}
+
+function modification(state = {}, action) {
+  switch (action.type) {
+  case 'SET_AUDIO_PARAM':
+    return Object.assign({}, state, {
+      [action.modification.type]: action.modification.value
     });
   default:
     return state;
@@ -46,7 +82,7 @@ let store = createStore(patch);
 
 store.subscribe(() => {
   ipcRenderer.send('modular', store.getState());
-  //assemblePatch(store.getState(), ctx);
+  assemblePatch(store.getState(), ctx);
 });
 
 ipcRenderer.on('readline', function (event, line) {
@@ -54,13 +90,18 @@ ipcRenderer.on('readline', function (event, line) {
   let actions = [];
 
   if (command.length > 1) {
-    command.forEach((part, i) => {  
+    command.forEach((node, i) => {  
+      actions.push({
+        type: 'ADD_NODE',
+        node: node.trim()
+      });
+
       if (i > 0) {
         actions.push({
           type: 'ADD_CONNECTION',
           connection: {
-            from: command[i - 1],
-            to: command[i]
+            from: command[i - 1].trim(),
+            to: command[i].trim()
           }
         });
       }
@@ -68,14 +109,14 @@ ipcRenderer.on('readline', function (event, line) {
   } else {
     command = line.split('>');
     command = command.slice(0, 1).concat(command.slice(1, command.length)[0].split('.'));
-    action = {
+    actions.push({
       type: 'SET_AUDIO_PARAM',
       modification: {
-        value: command[0],
-        node: command[1],
-        type: command[2],
+        value: command[0].trim(),
+        node: command[1].trim(),
+        type: command[2].trim(),
       }
-    }
+    });
   }
   actions.forEach((action) => {
     store.dispatch(action);
