@@ -7,7 +7,7 @@ export function assemblePatch(state, ctx) {
       audioNode: createAudioNode(node),
       nodeId: node
     };
-  })
+  });
 
   // Set their audio params
   nodes.forEach(({audioNode, nodeId}) => {
@@ -21,16 +21,20 @@ export function assemblePatch(state, ctx) {
 
   // Connect the nodes
   const nodeMap = {};
-  const connections = Object.keys(state.connections);
+  const connectionsFrom = Object.keys(state.connections);
   if (nodes) { 
     // Convert back to map
     nodes.forEach((node) => {
-      nodeMap[node.nodeID] = node.audioNode;
+      nodeMap[node.nodeId] = node.audioNode;
     });
 
     // Connect audio nodes
-    connections.forEach((connection, i) => {
-      nodeMap[connections[i]].connect(nodeMap.connection);
+    connectionsFrom.forEach((connection) => {
+      const nodeFrom = nodeMap[connection];
+      const nodeTo = nodeMap[state.connections[connection]];
+      if (nodeFrom && nodeTo) {
+        nodeFrom.connect(nodeTo);
+      }
     });
   }
 
@@ -46,7 +50,6 @@ export function assemblePatch(state, ctx) {
       return ctx.destination;
     case 'gain':
       const gain = ctx.createGain();
-      window.gain = gain;
       gain.gain.value = .5;
       return gain;
     default:

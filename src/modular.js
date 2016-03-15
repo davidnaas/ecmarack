@@ -81,8 +81,9 @@ function modification(state = {}, action) {
 let store = createStore(patch);
 
 store.subscribe(() => {
-  ipcRenderer.send('modular', store.getState());
-  assemblePatch(store.getState(), ctx);
+  const state = store.getState();
+  ipcRenderer.send('modular', state);
+  assemblePatch(state, ctx);
 });
 
 ipcRenderer.on('readline', function (event, line) {
@@ -118,6 +119,7 @@ ipcRenderer.on('readline', function (event, line) {
       }
     });
   }
+
   actions.forEach((action) => {
     store.dispatch(action);
   });
